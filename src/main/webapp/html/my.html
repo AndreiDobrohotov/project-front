@@ -2,10 +2,266 @@
 <head>
     <title>RPG</title>
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
-    <link href="/css/my.css" rel="stylesheet">
+    <link href="/css/my.css" type="text/css" rel="stylesheet">
 </head>
 <body>
 <h1>RPG admin panel</h1>
+<h2>Accounts list:</h2>
+<label>Count per page:
+    <select onchange="
+            pageSize = this.options[this.selectedIndex].value;
+            renewPages();
+            ">
+        <option selected value="3">3</option>
+        <option value="5">5</option>
+        <option value="7">7</option>
+        <option value="10">10</option>
+    </select>
+</label>
+<table id="players-table">
+    <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Title</th>
+        <th>Race</th>
+        <th>Profession</th>
+        <th>Level</th>
+        <th>Birthday</th>
+        <th>Banned</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+</table>
+<div id="button-group">
+    <label>Pages:</label>
+</div>
+<hr>
+<h2>Create new account:</h2>
+<label>Name: <input class="cna" id="account-name" type="text" maxlength="12"/> </label>
+<br>
+<label>Title: <input class="cna" id="account-title" type="text" maxlength="30"/> </label>
+<br>
+<label>Race: <select class="cna" id="select-race"></select></label>
+<br>
+<label>Profession: <select class="cna" id="select-profession"></select></label>
+<br>
+<label>Level: <input class="cna" id="account-level" type="text" maxlength="3"/></label>
+<br>
+<label>Birthday: <input class="cna" id="select-date" type="date"/></label>
+<br>
+<label>Banned: <select class="cna" id="select-status"></select></label>
+<br>
+<button class = "saveButton" onclick="createPlayer()">
+    <img src="img/save.png"><label>SAVE</label>
+</button>
 
+
+<script>
+    var pageNumber = 0;
+    var pressedPageButton;
+    var pagesCount = 0;
+    var pageSize = 3;
+    var pageButtonsGroup = document.getElementById('button-group');
+    var playersTable = document.getElementById("players-table");
+    const professions = ["WARRIOR", "ROGUE", "SORCERER", "CLERIC", "PALADIN", "NAZGUL", "WARLOCK", "DRUID"];
+    const races = ["HUMAN", "DWARF", "ELF", "GIANT", "ORC", "TROLL", "HOBBIT"];
+    const status = ["true", "false"];
+
+    //заполнение данных при первой загрузке
+    window.onload = function () {
+        renewPages();
+        addOptionsToSelector(document.getElementById('select-race'), races);
+        addOptionsToSelector(document.getElementById('select-profession'), professions);
+        addOptionsToSelector(document.getElementById('select-status'), status);
+    }
+
+    //внесение изменений в таблицу
+    function editCellsValue(row) {
+        setInputFieldOnCell(row.cells[1], 10, 12);
+        setInputFieldOnCell(row.cells[2], 20, 30);
+        setSelectorOnCell(row.cells[3], races);
+        setSelectorOnCell(row.cells[4], professions);
+        setSelectorOnCell(row.cells[7], status);
+        row.cells[8].innerHTML = '<img onclick="updatePlayer(event.target.parentNode.parentNode)" src="img/save.png">';
+        row.cells[9].firstChild.remove();
+    }
+
+    //добавляет селектор в клетку таблицы
+    function setSelectorOnCell(cell, options) {
+        var selector = document.createElement('select');
+        selector.classList.add("tableChangingField");
+        var text = cell.innerText;
+        cell.innerHTML = "";
+        cell.appendChild(selector);
+        for (var i = 0; i < options.length; i++) {
+            var option = document.createElement('option');
+            option.text = options[i];
+            selector.add(option);
+            if (text === options[i]) {
+                selector.selectedIndex = i;
+            }
+        }
+    }
+
+    //добавляет редактируемое текстовое поле в клетку таблицы
+    function setInputFieldOnCell(cell, size, length) {
+        var input = document.createElement("input");
+        input.classList.add("tableChangingField");
+        input.type = 'text';
+        input.maxLength = length;
+        input.size = size;
+        input.value = cell.innerText;
+        cell.innerHTML = "";
+        cell.appendChild(input);
+    }
+
+    //добавляет опции для селектора из массивов
+    function addOptionsToSelector(select, options) {
+        for (var i = 0; i < options.length; i++) {
+            var option = document.createElement('option');
+            option.text = options[i];
+            select.add(option);
+        }
+    }
+
+    //очищает поля создания нового аккаунта
+    function clearFields(){
+        document.getElementById('account-name').value="";
+        document.getElementById('account-title').value="";
+        document.getElementById('select-race').value=races[0];
+        document.getElementById('select-profession').value=professions[0];
+        document.getElementById('select-date').value='';
+        document.getElementById('select-status').value=status[0];
+        document.getElementById('account-level').value="";
+    }
+
+    //отправляет запрос на сервер на удаление данных
+    function deletePlayer(playerID) {
+        $.ajax({
+            url: `/rest/players/${playerID}`,
+            type: 'DELETE'
+        }).done(() => {
+            renewPages();
+        });
+    }
+
+    //отправляет запрос на сервер на обновленние данных
+    function updatePlayer(row) {
+        var playerID = row.cells[0].innerText;
+        const data = {
+            name: row.cells[1].firstChild.value,
+            title: row.cells[2].firstChild.value,
+            race: row.cells[3].firstChild.value,
+            profession: row.cells[4].firstChild.value,
+            banned: row.cells[7].firstChild.value,
+        };
+        $.ajax({
+            type: "POST",
+            url: `/rest/players/${playerID}`,
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function () {
+                renewPages();
+            },
+            error: function () {
+                alert("Field can't be empty");
+            }
+        });
+    }
+
+    //отправляет запрос на сервер на добавление нового аккаунта
+    function createPlayer() {
+        const data = {
+            name: document.getElementById('account-name').value,
+            title: document.getElementById('account-title').value,
+            race: document.getElementById('select-race').value,
+            profession: document.getElementById('select-profession').value,
+            birthday: document.getElementById('select-date').valueAsNumber,
+            banned: document.getElementById('select-status').value,
+            level: document.getElementById('account-level').value
+        };
+        $.ajax({
+            type: "POST",
+            url: `/rest/players`,
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function () {
+                renewPages();
+                clearFields();
+            },
+            error: function () {
+                alert("Data is not correct!");
+            }
+        });
+    }
+
+    //обновляет кнопки и вызывает метод обновления таблицы
+    function renewPages() {
+        $.get("/rest/players/count", function (allPlayersCount) {
+            pagesCount = Math.ceil(allPlayersCount / pageSize);
+            if(pagesCount<1) pagesCount = 1;
+            var currentPagesCount = pageButtonsGroup.children.length;
+            if (currentPagesCount <= pagesCount) {
+                for (var i = currentPagesCount; i <= pagesCount; i++) {
+                    var button = document.createElement('button');
+                    button.innerHTML = i;
+                    button.classList.add("pageButton");
+                    button.onclick = function (event) {
+                        markButton(event.target);
+                        var buttons = pageButtonsGroup.getElementsByTagName('button');
+                        pageNumber = Array.prototype.indexOf.call(buttons, event.target);
+                        renewTable();
+                    }
+                    pageButtonsGroup.appendChild(button);
+                }
+            } else {
+                if (pageNumber > pagesCount - 1) {
+                    pageNumber = pagesCount - 1;
+                }
+                pageNumber = pageNumber > pagesCount - 1 ? pagesCount - 1 : pageNumber;
+                for (var i = currentPagesCount - 1; i > pagesCount; i--) {
+                    pageButtonsGroup.children.item(i).remove();
+                }
+            }
+            markButton(pageButtonsGroup.getElementsByTagName('button').item(pageNumber));
+            renewTable();
+        });
+    }
+
+    //обновляет таблицу
+    function renewTable() {
+        for (var i = playersTable.rows.length - 1; i > 0; i--) {
+            playersTable.deleteRow(i);
+        }
+        $.get("/rest/players", {pageNumber: pageNumber, pageSize: pageSize}, function (data) {
+
+            for (var i = 0; i < data.length; i++) {
+                var row = playersTable.insertRow(-1);
+                row.insertCell(0).innerHTML = data[i].id;
+                row.insertCell(1).innerHTML = data[i].name;
+                row.insertCell(2).innerHTML = data[i].title;
+                row.insertCell(3).innerHTML = data[i].race;
+                row.insertCell(4).innerHTML = data[i].profession;
+                row.insertCell(5).innerHTML = data[i].level;
+                var date = new Date(data[i].birthday);
+                row.insertCell(6).innerHTML = (date.getMonth() + 1) + '/' + (date.getDate()) + '/' + (date.getFullYear());
+                row.insertCell(7).innerHTML = data[i].banned;
+                row.insertCell(8).innerHTML = '<img onclick="editCellsValue(event.target.parentNode.parentNode)" src="img/edit.png">';
+                row.insertCell(9).innerHTML = '<img onclick="deletePlayer(event.target.parentNode.parentNode.cells[0].innerHTML)" src="img/delete.png">';
+            }
+        });
+    }
+
+
+    //меняет стиль кнопки страниц после нажатия
+    function markButton(button) {
+        if (pressedPageButton != null) {
+            pressedPageButton.classList.remove("pageButtonPressed");
+        }
+        button.classList.add("pageButtonPressed");
+        pressedPageButton = button;
+    }
+
+</script>
 </body>
 </html>

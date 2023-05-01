@@ -48,6 +48,7 @@ public class PlayerController {
         if (info.title.length() > 30) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         if (isNull(info.race)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         if (isNull(info.profession)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if (info.level>100 || info.level<0) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         if (isNull(info.birthday) || info.birthday < 0) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 
         LocalDate localDate = new Date(info.birthday).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();

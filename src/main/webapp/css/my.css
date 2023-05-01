@@ -1,0 +1,50 @@
+body {
+    background-color: lightblue;
+}
+
+h1, h2, label {
+    color: navy;
+}
+
+td, th {
+    padding: 8px;
+    background-color: lightskyblue;
+    border: 1px solid black;
+    color: navy;
+}
+
+select {
+    background-color: lightskyblue;
+    color: navy;
+}
+
+.saveButton{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: lightskyblue;
+    font-weight: bold;
+    color: navy;
+}
+
+.pageButton {
+    margin: 2px;
+    background-color: lightskyblue;
+    color: navy;
+}
+
+.pageButtonPressed {
+    background-color: navy;
+    color: lightskyblue;
+}
+
+.tableChangingField {
+    background-color: navy;
+    color: lightskyblue;
+}
+
+.cna{
+    background-color: lightskyblue;
+    color: navy;
+    margin-bottom: 8px;
+}
